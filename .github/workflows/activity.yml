@@ -1,0 +1,49 @@
+name: Evening Journal Update
+
+on:
+  schedule:
+    # This wakes up at 12:00, 13:00, and 14:00 UTC (8 PM, 9 PM, 10 PM Singapore Time)
+    - cron: '30 12,13,14 * * *'
+  workflow_dispatch:
+
+jobs:
+  journal-entry:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4 # Using v4 instead of v3 to vary fingerprints
+
+      - name: Randomize and Commit
+        run: |
+          # 40% chance to skip (slightly higher than the first account)
+          if [ $((RANDOM % 100)) -lt 40 ]; then
+            echo "Taking the night off."
+            exit 0
+          fi
+
+          git config --global user.name "rooksic"
+          git config --global user.email "rooksic@gmail.com"
+
+          # Different pool of messages: more "documentation" focused
+          MESSAGES=(
+            "docs: update study notes"
+            "docs: add summary for today"
+            "docs: fix typo in notes"
+            "chore: sync journal logs"
+            "docs: add resource links"
+          )
+          
+          # Decide how many commits to make (1 or 2)
+          COUNT=$(( (RANDOM % 2) + 1 ))
+          
+          for ((i=1; i<=COUNT; i++)); do
+            MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+            echo "Log entry $(date): Entry ID $RANDOM" >> journal.md
+            git add journal.md
+            git commit -m "$MSG"
+            # Brief pause between multiple commits
+            sleep 2
+          done
+
+          git push
